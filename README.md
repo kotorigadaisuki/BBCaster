@@ -18,7 +18,7 @@ Broadcast de mensajes en tiempo real vía **Server-Sent Events (SSE)**.
 ```bash
 # Clonar el repo
 git clone <repo-url>
-cd SSEvents
+cd BBCaster
 
 # Opcional: usar el script de arranque automático
 ./start.sh
