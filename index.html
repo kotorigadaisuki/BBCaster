@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BBCaster</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #1a1a2e;
+      color: #ebebeb;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 2rem;
+    }
+    h1 {
+      margin-bottom: 1.5rem;
+      font-size: 1.8rem;
+      font-weight: 700;
+      font-style: italic;
+      color: #59c3c3;
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+    }
+    .logo-icon {
+      font-size: 2.5rem;
+      color: #fff;
+      filter: drop-shadow(0 0 8px rgba(90, 195, 195, 0.6));
+    }
+    .logo-text {
+      font-size: 1.8rem;
+      font-weight: 700;
+      font-style: italic;
+      color: #59c3c3;
+    }
+    .controls {
+      display: flex;
+      gap: 0.5rem;
+      width: 100%;
+      max-width: 600px;
+      margin-bottom: 2rem;
+    }
+    input[type="text"] {
+      flex: 1;
+      padding: 0.75rem 1rem;
+      border: 2px solid #333;
+      border-radius: 8px;
+      background: #ebebeb;
+      color: #1a1a2e;
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    input[type="text"]:focus { border-color: #59c3c3; }
+    button {
+      padding: 0.75rem 1.5rem;
+      background: #52489c;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button:hover { background: #4062bb; }
+    .messages {
+      width: 100%;
+      max-width: 600px;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    pre {
+      background: #52489c;
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 1rem;
+      font-family: 'Fira Code', monospace;
+      font-size: 0.9rem;
+      color: #ebebeb;
+      position: relative;
+      overflow-x: auto;
+      transition: opacity 0.5s, transform 0.5s;
+    }
+    pre.expiring {
+      border-color: #f45b69;
+      color: #f45b69;
+    }
+    .timer {
+      position: absolute;
+      top: 4px;
+      right: 8px;
+      font-size: 0.75rem;
+      color: #ebebeb;
+    }
+    @keyframes flash {
+      0%   { background: #52489c; }
+      50%  { background: #f45b69; }
+      100% { background: #52489c; }
+    }
+    pre.flashing {
+      animation: flash 0.2s ease-out;
+    }
+    .empty {
+      text-align: center;
+      color: #666;
+      padding: 2rem;
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+  <div class="logo">
+    <span class="logo-icon">🛰️</span>
+    <span class="logo-text">BBCaster</span>
+  </div>
+
+  <div class="controls">
+    <input type="text" id="msgInput" placeholder="Escribí un mensaje..." />
+    <button id="sendBtn">Enviar</button>
+  </div>
+
+  <div class="messages" id="messagesContainer">
+    <p class="empty">Esperando mensajes...</p>
+  </div>
+
+  <script>
+    const input = document.getElementById('msgInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const container = document.getElementById('messagesContainer');
+
+    // Send message via POST
+    async function sendMessage() {
+      const text = input.value.trim();
+      if (!text) return;
+
+      try {
+        await fetch('/post', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ data: text })
+        });
+        input.value = '';
+      } catch (e) {
+        console.error('Error sending:', e);
+      }
+    }
+
+    sendBtn.addEventListener('click', sendMessage);
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') sendMessage();
+    });
+
+    // Receive SSE events
+    const eventSource = new EventSource('/events');
+
+    eventSource.onmessage = (event) => {
+      if (event.event === 'connected') return;
+      addMessage(JSON.parse(event.data));
+    };
+
+    eventSource.onerror = () => {
+      console.error('SSE connection error');
+      eventSource.close();
+    };
+
+    // Add message to UI with 15s lifetime
+    function addMessage(msg) {
+      // Remove empty placeholder if present
+      const empty = container.querySelector('.empty');
+      if (empty) empty.remove();
+
+      const pre = document.createElement('pre');
+      pre.style.cursor = 'pointer';
+      pre.title = 'Click para copiar';
+
+      const timer = document.createElement('span');
+      timer.className = 'timer';
+      timer.textContent = '15s';
+
+      const content = document.createTextNode(msg.data);
+
+      pre.appendChild(timer);
+      pre.appendChild(content);
+
+      container.appendChild(pre);
+
+      // Auto-scroll to bottom
+      container.scrollTop = container.scrollHeight;
+
+      // Remove old messages if more than 50
+      while (container.children.length > 50) {
+        container.firstChild.remove();
+      }
+
+      // Countdown and remove after 15 seconds
+      let secondsLeft = 15;
+      const interval = setInterval(() => {
+        secondsLeft--;
+        timer.textContent = `${secondsLeft}s`;
+        if (secondsLeft <= 3) pre.classList.add('expiring');
+        if (secondsLeft <= 0) {
+          clearInterval(interval);
+          pre.style.opacity = '0';
+          setTimeout(() => pre.remove(), 500);
+        }
+      }, 1000);
+
+      // Click to copy content to clipboard
+      pre.addEventListener('click', () => {
+        pre.classList.add('flashing');
+        const text = pre.textContent.replace(/\d+s$/, '').trim();
+        navigator.clipboard.writeText(text).then(() => {
+          timer.textContent = '✓ Copiado';
+          setTimeout(() => pre.classList.remove('flashing'), 200);
+          setTimeout(() => { timer.textContent = `${secondsLeft}s`; }, 1500);
+        });
+      });
+    }
+  </script>
+</body>
+</html>
