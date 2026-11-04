@@ -168,8 +168,9 @@
     };
 
     eventSource.onerror = () => {
-      console.error('SSE connection error');
-      eventSource.close();
+      console.warn('SSE connection lost, reconnecting...');
+      // No close() — let the browser's built-in retry mechanism handle reconnection
+      // The EventSource will automatically retry every ~3 seconds
     };
 
     // Add message to UI with 15s lifetime
@@ -191,10 +192,12 @@
       pre.appendChild(timer);
       pre.appendChild(content);
 
-      container.appendChild(pre);
-
-      // Auto-scroll to bottom
-      container.scrollTop = container.scrollHeight;
+      // Insert new messages at the top
+      if (container.firstChild) {
+        container.insertBefore(pre, container.firstChild);
+      } else {
+        container.appendChild(pre);
+      }
 
       // Remove old messages if more than 50
       while (container.children.length > 50) {
