@@ -54,12 +54,5 @@ Editá `config.json` para cambiar puerto e IP:
 }
 ```
 
-## Desarrollo
-
-- `index.js` → backend Express + EventEmitter
-- `index.html` → UI con CSS + JS vanilla
-- `config.json` → puerto e IP de escucha
-- `.nvmrc` → versión de Node requerida (v24)
-- `start.sh` → script de arranque automático
 
 
