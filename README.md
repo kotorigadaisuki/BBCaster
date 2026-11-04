@@ -62,10 +62,4 @@ Editá `config.json` para cambiar puerto e IP:
 - `.nvmrc` → versión de Node requerida (v24)
 - `start.sh` → script de arranque automático
 
-## Tags de versión
 
-| Tag | Descripción |
-|-----|-------------|
-| `v1.0.0` | Release inicial (rename, config, start.sh, flash animation) |
-| `v1.0.1` | Restauración de `.nvmrc` y `start.sh` |
-| `v1.0.2` | Corrección: `.nvmrc` a v24 (v26 no disponible en nvm) |
