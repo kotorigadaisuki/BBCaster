@@ -42,12 +42,28 @@
     }
     .controls {
       display: flex;
+      align-items: center;
       gap: 0.5rem;
       width: 100%;
       max-width: 600px;
       margin-bottom: 2rem;
     }
-    input[type="text"] {
+
+    .show-label {
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+      color: #ebebeb;
+      font-size: 0.85rem;
+      white-space: nowrap;
+    }
+
+    .show-label input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+    }
+    #msgInput {
       flex: 1;
       padding: 0.75rem 1rem;
       border: 2px solid #333;
@@ -58,7 +74,7 @@
       outline: none;
       transition: border-color 0.2s;
     }
-    input[type="text"]:focus { border-color: #59c3c3; }
+    #msgInput:focus { border-color: #59c3c3; }
     button {
       padding: 0.75rem 1.5rem;
       background: #52489c;
@@ -125,6 +141,7 @@
 
   <div class="controls">
     <input type="text" id="msgInput" placeholder="Escribí un mensaje..." />
+    <label class="show-label"><input type="checkbox" id="showCheck" checked /> Show</label>
     <button id="sendBtn">Enviar</button>
   </div>
 
@@ -146,7 +163,7 @@
         await fetch('/post', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ data: text })
+          body: JSON.stringify({ txt: text, show: showCheck.checked })
         });
         input.value = '';
       } catch (e) {
@@ -159,12 +176,18 @@
       if (e.key === 'Enter') sendMessage();
     });
 
+    // Toggle input type between text and password based on checkbox state
+    showCheck.addEventListener('change', () => {
+      input.type = showCheck.checked ? 'text' : 'password';
+    });
+
     // Receive SSE events
     const eventSource = new EventSource('/events');
 
     eventSource.onmessage = (event) => {
       if (event.event === 'connected') return;
-      addMessage(JSON.parse(event.data));
+      const msg = JSON.parse(event.data);
+      addMessage(msg.txt, msg.show, msg.ts);
     };
 
     eventSource.onerror = () => {
@@ -174,7 +197,7 @@
     };
 
     // Add message to UI with 15s lifetime
-    function addMessage(msg) {
+    function addMessage(txt, show, ts) {
       // Remove empty placeholder if present
       const empty = container.querySelector('.empty');
       if (empty) empty.remove();
@@ -187,7 +210,20 @@
       timer.className = 'timer';
       timer.textContent = '15s';
 
-      const content = document.createTextNode(msg.data);
+      // Store real text for copy
+      pre.dataset.realText = txt;
+
+      // Store timestamp for display
+      pre.dataset.ts = ts;
+
+      let displayText;
+      if (show) {
+        displayText = txt;
+      } else {
+        displayText = '*'.repeat(txt.length);
+      }
+
+      const content = document.createTextNode(displayText);
 
       pre.appendChild(timer);
       pre.appendChild(content);
@@ -217,11 +253,10 @@
         }
       }, 1000);
 
-      // Click to copy content to clipboard
+      // Click to copy real content to clipboard (regardless of show state)
       pre.addEventListener('click', () => {
         pre.classList.add('flashing');
-        const text = pre.textContent.replace(/\d+s$/, '').trim();
-        navigator.clipboard.writeText(text).then(() => {
+        navigator.clipboard.writeText(pre.dataset.realText).then(() => {
           timer.textContent = '✓ Copiado';
           setTimeout(() => pre.classList.remove('flashing'), 200);
           setTimeout(() => { timer.textContent = `${secondsLeft}s`; }, 1500);

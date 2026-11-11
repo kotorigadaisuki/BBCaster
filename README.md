@@ -4,10 +4,13 @@ Broadcast de mensajes en tiempo real vía **Server-Sent Events (SSE)**.
 
 ## ¿Qué hace?
 
-- Recibe mensajes por `POST /post` con `{ "data": "..." }`
+- Recibe mensajes por `POST /post` con `{ "txt": "...", "show": true/false }`
+- El servidor agrega automáticamente `ts` (ISO timestamp) al broadcast SSE
 - Los retransmite a todos los clientes conectados a `GET /events`
-- UI web con input, botón enviar, y mensajes que expiran en 15s
-- Click en un mensaje → copia al portapapeles + destello rosa
+- UI web con input, checkbox "Show" y botón enviar
+- El checkbox cambia el tipo del input a `password` (oculta caracteres mientras escribís)
+- Mensajes con `show: false` se muestran como asteriscos (`****`)
+- Click en un mensaje → copia el texto real al portapapeles + destello rosa
 
 ## Requisitos
 

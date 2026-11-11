@@ -17,7 +17,7 @@ app.get("/events", (req, res) => {
 
   // Send initial connection message
   res.write("event: connected\n");
-  res.write(`data: ${JSON.stringify({ message: "Connected to SSE" })}\n\n`);
+  res.write(`data: ${JSON.stringify({ ts: new Date().toISOString(), txt: "Connected to SSE", show: true })}\n\n`);
 
   // Handle client disconnect
   req.on("close", () => {
@@ -27,7 +27,7 @@ app.get("/events", (req, res) => {
 
   const onBroadcast = (msg) => {
     res.write(`event: message\n`);
-    res.write(`data: ${JSON.stringify(msg)}\n\n`);
+    res.write(`data: ${JSON.stringify({ ts: msg.ts, txt: msg.txt, show: msg.show })}\n\n`);
   };
 
   emitter.on("broadcast", onBroadcast);
@@ -35,16 +35,17 @@ app.get("/events", (req, res) => {
 
 // POST endpoint - receive a message and broadcast to all SSE clients
 app.post("/post", (req, res) => {
-  const { data } = req.body;
+  const { txt, show } = req.body;
 
-  if (!data) {
-    return res.status(400).json({ error: "Field 'data' is required" });
+  if (!txt) {
+    return res.status(400).json({ error: "Field 'txt' is required" });
   }
 
   // Broadcast the message to all connected SSE clients
   emitter.emit("broadcast", {
-    timestamp: new Date().toISOString(),
-    data: data,
+    ts: new Date().toISOString(),
+    txt,
+    show: show !== undefined ? !!show : true,
   });
 
   res.json({ status: "ok", message: "Event broadcasted" });
