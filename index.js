@@ -53,6 +53,9 @@ app.post("/post", (req, res) => {
 
 const path = require("path");
 
+// Serve static files from public/
+app.use("/public", express.static(path.join(__dirname, "public")));
+
 // Serve the index.html at the root path (no cache)
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "index.html"), { cache: false });

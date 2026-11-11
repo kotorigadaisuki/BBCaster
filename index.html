@@ -26,8 +26,31 @@
     .logo {
       display: flex;
       align-items: center;
+      justify-content: space-between;
       gap: 0.75rem;
       margin-bottom: 1.5rem;
+    }
+
+    #qrBtn {
+      padding: 0.4rem 0.9rem;
+      background: transparent;
+      color: #fff;
+      border: 2px solid #fff;
+      border-radius: 6px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s, border-color 0.2s;
+    }
+
+    #qrBtn:hover {
+      background: #fff;
+      color: #1a1a2e;
+      border-color: #59c3c3;
+    }
+
+    #qrBtn:active {
+      transform: scale(0.95);
     }
     .logo-icon {
       font-size: 2.5rem;
@@ -58,7 +81,7 @@
       white-space: nowrap;
       cursor: pointer;
       user-select: none;
-      padding: 1.5rem 1rem;
+      padding: 1.25rem .5rem;
       border-radius: 8px;
       border: 3px solid #fff;
       box-shadow: 0 0 8px rgba(255, 255, 255, 0.15);
@@ -154,31 +177,117 @@
       padding: 2rem;
       font-style: italic;
     }
+
+    /* Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal.active {
+      display: flex;
+    }
+
+    .modal-content {
+      background: #1a1a2e;
+      border: 2px solid #59c3c3;
+      border-radius: 12px;
+      padding: 2rem;
+      max-width: 400px;
+      width: 90%;
+      position: relative;
+      box-shadow: 0 0 30px rgba(90, 195, 195, 0.3);
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 0.5rem;
+      right: 1rem;
+      font-size: 1.5rem;
+      color: #ebebeb;
+      cursor: pointer;
+      line-height: 1;
+    }
+
+    .modal-close:hover {
+      color: #f45b69;
+    }
+
+    #qrCanvas canvas {
+      border-radius: 8px;
+      background-color: #fff;
+      padding: 0.7rem;
+    }
   </style>
 </head>
 <body>
   <div class="logo">
     <span class="logo-icon">🛰️</span>
     <span class="logo-text">BBCaster</span>
+    <button id="qrBtn">QR</button>
   </div>
 
   <div class="controls">
-    <input type="text" id="msgInput" placeholder="Escribí un mensaje..." />
     <label class="show-label">
       <input type="checkbox" id="showCheck" checked />
       <span class="show-symbol">⚆</span>
     </label>
+    <input type="text" id="msgInput" placeholder="Escribí un mensaje..." />
     <button id="sendBtn">Enviar</button>
+  </div>
+
+  <!-- Modal -->
+  <div id="qrModal" class="modal">
+    <div class="modal-content">
+      <span class="modal-close">&times;</span>
+      <h2 style="text-align:center; margin-bottom:1rem; color:#59c3c3;">Escaneá este QR</h2>
+      <div id="qrCanvas" style="display:flex; justify-content:center;"></div>
+      <p id="qrUrl" style="text-align:center; margin-top:1rem; font-size:0.8rem; color:#999; word-break:break-all;"></p>
+    </div>
   </div>
 
   <div class="messages" id="messagesContainer">
     <p class="empty">Esperando mensajes...</p>
   </div>
 
+  <script src="/public/qrcode.min.js"></script>
   <script>
     const input = document.getElementById('msgInput');
     const sendBtn = document.getElementById('sendBtn');
     const container = document.getElementById('messagesContainer');
+
+    // QR Modal
+    const qrBtn = document.getElementById('qrBtn');
+    const qrModal = document.getElementById('qrModal');
+    const qrCanvas = document.getElementById('qrCanvas');
+    const qrUrl = document.getElementById('qrUrl');
+    const modalClose = document.querySelector('.modal-close');
+
+    function openQrModal() {
+      const url = window.location.origin;
+      qrCanvas.innerHTML = '';
+      new QRCode(qrCanvas, { text: url, width: 200, height: 200 });
+      qrUrl.textContent = url;
+      qrModal.classList.add('active');
+    }
+
+    function closeQrModal() {
+      qrModal.classList.remove('active');
+    }
+
+    qrBtn.addEventListener('click', openQrModal);
+    modalClose.addEventListener('click', closeQrModal);
+    qrModal.addEventListener('click', (e) => {
+      if (e.target === qrModal) closeQrModal();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeQrModal();
+    });
 
     // Send message via POST
     async function sendMessage() {
