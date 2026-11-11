@@ -281,12 +281,18 @@
       }, 1000);
 
       // Click to copy real content to clipboard (regardless of show state)
+      // Debounce: disable clicks for 1s after a successful copy
+      let copied = false;
       pre.addEventListener('click', () => {
+        if (copied) return;
+        copied = true;
         pre.classList.add('flashing');
         navigator.clipboard.writeText(pre.dataset.realText).then(() => {
           timer.textContent = '✓ Copiado';
           setTimeout(() => pre.classList.remove('flashing'), 200);
           setTimeout(() => { timer.textContent = `${secondsLeft}s`; }, 1500);
+        }).finally(() => {
+          setTimeout(() => { copied = false; }, 1000);
         });
       });
     }
