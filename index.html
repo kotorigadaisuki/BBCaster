@@ -208,6 +208,21 @@
       document.querySelector('.show-symbol').textContent = showCheck.checked ? '⚆' : '◠';
     });
 
+    // Global debounce for all buttons (1s cooldown)
+    const BUTTONS = document.querySelectorAll('button, .show-label');
+    BUTTONS.forEach(btn => {
+      let copied = false;
+      btn.addEventListener('click', () => {
+        if (copied) return;
+        copied = true;
+        btn.style.opacity = '0.5';
+        setTimeout(() => {
+          btn.style.opacity = '1';
+          copied = false;
+        }, 1000);
+      });
+    });
+
     // Receive SSE events
     const eventSource = new EventSource('/events');
 
