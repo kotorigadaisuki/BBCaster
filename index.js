@@ -51,14 +51,52 @@ app.post("/post", (req, res) => {
   res.json({ status: "ok", message: "Event broadcasted" });
 });
 
+const os = require("os");
 const path = require("path");
 
 // Serve static files from public/
 app.use("/public", express.static(path.join(__dirname, "public")));
 
-// Serve the index.html at the root path (no cache)
+// Serve the index.html at the root path (no cache) with embedded interfaces
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "index.html"), { cache: false });
+  let html = fs.readFileSync(path.join(__dirname, "index.html"), "utf8");
+
+  // Build interfaces HTML - filter by host coverage + always include localhost
+  const interfaces = os.networkInterfaces();
+  let ifaceHtml = "";
+
+  function coversHost(host, ip) {
+    if (host === "0.0.0.0") return true;
+    // Check if IP is in the same subnet as host
+    const hostParts = host.split(".");
+    const ipParts = ip.split(".");
+    for (let i = 0; i < hostParts.length; i++) {
+      if (hostParts[i] !== ipParts[i]) return false;
+    }
+    return true;
+  }
+
+  for (const [name, addresses] of Object.entries(interfaces)) {
+    for (const addr of addresses) {
+      if (addr.family === "IPv4") {
+        const url = `http://${addr.address}:${PORT}`;
+        // Always include localhost
+        if (addr.address === "127.0.0.1") {
+          ifaceHtml += `<div class="iface-row"><span class="iface-name">${name}</span><a href="${url}" target="_blank" class="iface-link">${url}</a><button class="iface-qr-btn" data-url="${url}">📷</button></div>\n`;
+        } else if (!addr.internal && coversHost(HOST, addr.address)) {
+          ifaceHtml += `<div class="iface-row"><span class="iface-name">${name}</span><a href="${url}" target="_blank" class="iface-link">${url}</a><button class="iface-qr-btn" data-url="${url}">📷</button></div>\n`;
+        }
+      }
+    }
+  }
+
+  // Replace placeholder with actual interfaces
+  html = html.replace(
+    '<!-- INTERFACES_PLACEHOLDER -->',
+    ifaceHtml || '<p class="empty">No se encontraron interfaces</p>'
+  );
+
+  res.send(html);
 });
 
 const fs = require("fs");

@@ -23,12 +23,19 @@
       font-style: italic;
       color: #59c3c3;
     }
-    .logo {
+    .header {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 0.75rem;
       margin-bottom: 1.5rem;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0;
     }
 
     #qrBtn {
@@ -51,6 +58,81 @@
 
     #qrBtn:active {
       transform: scale(0.95);
+    }
+
+    /* Collapsible interfaces */
+    .interfaces-section {
+      width: 100%;
+      max-width: 600px;
+      margin-bottom: 1rem;
+    }
+
+    .interfaces-section summary {
+      cursor: pointer;
+      color: #59c3c3;
+      font-size: 0.85rem;
+      user-select: none;
+      padding: 0.4rem 0;
+    }
+
+    .interfaces-section summary:hover {
+      color: #fff;
+    }
+
+    .interfaces-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+    }
+
+    .iface-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .iface-name {
+      color: #ebebeb;
+      font-size: 0.8rem;
+      font-weight: 600;
+      white-space: nowrap;
+      min-width: 80px;
+      text-align: right;
+      padding-right: 0.25rem;
+    }
+
+    .iface-link {
+      flex: 1;
+      color: #59c3c3;
+      text-decoration: none;
+      font-family: 'Fira Code', monospace;
+      font-size: 0.85rem;
+      padding: 0.5rem 0.75rem;
+      border-radius: 6px;
+      border: 1px solid #333;
+      transition: background 0.2s, border-color 0.2s;
+    }
+
+    .iface-link:hover {
+      background: #52489c;
+      border-color: #59c3c3;
+      color: #fff;
+    }
+
+    .iface-qr-btn {
+      padding: 0.5rem;
+      background: transparent;
+      border: 1px solid #333;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: background 0.2s, border-color 0.2s;
+    }
+
+    .iface-qr-btn:hover {
+      background: #52489c;
+      border-color: #59c3c3;
     }
     .logo-icon {
       font-size: 2.5rem;
@@ -178,6 +260,40 @@
       font-style: italic;
     }
 
+    /* Interfaces section */
+    .interfaces-section {
+      width: 100%;
+      max-width: 600px;
+      margin-bottom: 2rem;
+    }
+
+    .interfaces-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .interface-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #2a2a4e;
+      border: 1px solid #333;
+      border-radius: 6px;
+      padding: 0.6rem 1rem;
+      font-size: 0.85rem;
+    }
+
+    .interface-item .iface-name {
+      color: #59c3c3;
+      font-weight: 600;
+    }
+
+    .interface-item .iface-ip {
+      color: #ebebeb;
+      font-family: 'Fira Code', monospace;
+    }
+
     /* Modal */
     .modal {
       display: none;
@@ -223,14 +339,29 @@
       background-color: #fff;
       padding: 0.7rem;
     }
+
+    #qrCanvas img {
+      background-color: #fff;
+      padding: 0.72rem;
+    }
   </style>
 </head>
 <body>
-  <div class="logo">
-    <span class="logo-icon">🛰️</span>
-    <span class="logo-text">BBCaster</span>
+  <div class="header">
     <button id="qrBtn">QR</button>
+    <div class="logo">
+      <span class="logo-icon">🛰️</span>
+      <span class="logo-text">BBCaster</span>
+    </div>
   </div>
+
+  <!-- Collapsible Network Interfaces -->
+  <details class="interfaces-section">
+    <summary style="cursor:pointer; color:#59c3c3; font-size:0.85rem; user-select:none;">📡 Puntos de acceso</summary>
+    <div id="interfacesList" class="interfaces-list">
+      <!-- INTERFACES_PLACEHOLDER -->
+    </div>
+  </details>
 
   <div class="controls">
     <label class="show-label">
@@ -287,6 +418,17 @@
     });
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') closeQrModal();
+    });
+
+    // QR buttons for each interface link - opens modal with QR
+    document.querySelectorAll('.iface-qr-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const url = btn.dataset.url;
+        qrCanvas.innerHTML = '';
+        new QRCode(qrCanvas, { text: url, width: 200, height: 200 });
+        qrUrl.textContent = url;
+        qrModal.classList.add('active');
+      });
     });
 
     // Send message via POST
